@@ -56,6 +56,9 @@ def main():
     sell_signals = []
 
     for symbol in symbols:
+        if len(buy_signals) >= 1 and len(sell_signals) >= 1:
+            break  # Stop if one of each is found
+
         try:
             ticker = yf.Ticker(symbol + ".NS")
             hist = ticker.history(period='1d', interval="15m")
@@ -74,11 +77,11 @@ def main():
             fib = calculate_fib_levels(high, low)
             near_fib = any(abs(close - fib[level]) < 0.5 for level in ['61.8%', '50.0%'])
 
-            if close > open_price and near_fib:
+            if close > open_price and near_fib and len(buy_signals) < 1:
                 t1, t2, sl = calculate_levels(close, 'Buy')
                 buy_signals.append((symbol, close, t1, t2, sl))
 
-            elif close < open_price and near_fib:
+            elif close < open_price and near_fib and len(sell_signals) < 1:
                 t1, t2, sl = calculate_levels(close, 'Sell')
                 sell_signals.append((symbol, close, t1, t2, sl))
 
@@ -92,15 +95,14 @@ def main():
 
     body = ""
     if buy_signals:
-        body += "📘 BUY SIGNALS:\n"
-        for symbol, entry, t1, t2, sl in buy_signals[:3]:
-            body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
-        body += "\n"
+        body += "📘 BUY SIGNAL:\n"
+        symbol, entry, t1, t2, sl = buy_signals[0]
+        body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n\n"
 
     if sell_signals:
-        body += "📕 SHORT SIGNALS:\n"
-        for symbol, entry, t1, t2, sl in sell_signals[:3]:
-            body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
+        body += "📕 SHORT SIGNAL:\n"
+        symbol, entry, t1, t2, sl = sell_signals[0]
+        body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
 
     subject = f"Fibonacci Signals – {datetime.now().strftime('%d %b %Y')}"
     send_email(subject, body)
