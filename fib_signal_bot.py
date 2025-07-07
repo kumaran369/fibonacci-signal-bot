@@ -2,13 +2,19 @@ import yfinance as yf
 import pandas as pd
 import yagmail
 from datetime import datetime
-
-# Email credentials (set these on Render as environment variables)
 import os
-EMAIL_USER = os.getenv("akumaran313@gmail.com")
-EMAIL_PASS = os.getenv("lbdk vebu jksi faub")
 
-receiver = EMAIL_USER  # Send to self, or change to your desired email
+def send_email(subject, body):
+    EMAIL_USER = os.getenv("EMAIL_USER")
+    EMAIL_PASS = os.getenv("EMAIL_PASS")
+    
+    if not EMAIL_USER or not EMAIL_PASS:
+        print("❌ Email credentials not found.")
+        return
+
+    yag = yagmail.SMTP(user=EMAIL_USER, password=EMAIL_PASS, host='smtp.gmail.com')
+    yag.send(to=EMAIL_USER, subject=subject, contents=body)
+    print("✅ Email sent successfully.")
 
 def calculate_levels(price, signal_type):
     if price < 100:
@@ -21,6 +27,7 @@ def calculate_levels(price, signal_type):
         t1, t2, sl = 3.5, 6.0, 3.0
     else:
         t1, t2, sl = 5.0, 8.0, 4.0
+
     if signal_type == 'Buy':
         return round(price + t1, 2), round(price + t2, 2), round(price - sl, 2)
     else:
@@ -37,23 +44,30 @@ def calculate_fib_levels(high, low):
         '100.0%': low
     }
 
-def send_email(subject, body):
-    yag = yagmail.SMTP(EMAIL_USER, EMAIL_PASS)
-    yag.send(to=receiver, subject=subject, contents=body)
-
 def main():
-    symbols = pd.read_csv("ind_nifty500list.csv")["Symbol"].tolist()
-    buy_signals, sell_signals = [], []
+    try:
+        df = pd.read_csv("ind_nifty500list.csv")
+        symbols = df['Symbol'].dropna().tolist()
+    except Exception as e:
+        print("❌ Error loading symbol list:", e)
+        return
+
+    buy_signals = []
+    sell_signals = []
 
     for symbol in symbols:
         try:
-            data = yf.Ticker(symbol + ".NS").history(period="1d", interval="15m")
-            if len(data) < 10 or data["Volume"].mean() < 50000:
+            ticker = yf.Ticker(symbol + ".NS")
+            hist = ticker.history(period='1d', interval="15m")
+
+            if hist.empty or len(hist) < 10 or hist['Volume'].mean() < 50000:
                 continue
-            high = data["High"].max()
-            low = data["Low"].min()
-            close = data["Close"].iloc[-1]
-            open_price = data["Open"].iloc[0]
+
+            high = hist['High'].max()
+            low = hist['Low'].min()
+            close = hist['Close'].iloc[-1]
+            open_price = hist['Open'].iloc[0]
+
             if close >= 1000:
                 continue
 
@@ -62,18 +76,34 @@ def main():
 
             if close > open_price and near_fib:
                 t1, t2, sl = calculate_levels(close, 'Buy')
-                buy_signals.append(f"{symbol}: Buy at ₹{close:.2f} → T1: ₹{t1}, T2: ₹{t2}, SL: ₹{sl}")
+                buy_signals.append((symbol, close, t1, t2, sl))
+
             elif close < open_price and near_fib:
                 t1, t2, sl = calculate_levels(close, 'Sell')
-                sell_signals.append(f"{symbol}: Short at ₹{close:.2f} → T1: ₹{t1}, T2: ₹{t2}, SL: ₹{sl}")
-        except Exception:
+                sell_signals.append((symbol, close, t1, t2, sl))
+
+        except Exception as e:
+            print(f"Skipping {symbol}: {e}")
             continue
 
     if not buy_signals and not sell_signals:
-        send_email("Fibonacci Signal Bot 📉", "No signals found today.")
-    else:
-        body = "📘 Buy Signals:\n" + "\n".join(buy_signals) + "\n\n📕 Sell Signals:\n" + "\n".join(sell_signals)
-        send_email(f"Fibonacci Signals – {datetime.now().strftime('%d %b %Y')}", body)
+        print("❌ No signals today.")
+        return
+
+    body = ""
+    if buy_signals:
+        body += "📘 BUY SIGNALS:\n"
+        for symbol, entry, t1, t2, sl in buy_signals[:3]:
+            body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
+        body += "\n"
+
+    if sell_signals:
+        body += "📕 SHORT SIGNALS:\n"
+        for symbol, entry, t1, t2, sl in sell_signals[:3]:
+            body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
+
+    subject = f"Fibonacci Signals – {datetime.now().strftime('%d %b %Y')}"
+    send_email(subject, body)
 
 if __name__ == "__main__":
     main()

@@ -2,8 +2,8 @@ name: 📈 Daily Fibonacci Email Bot
 
 on:
   schedule:
-    - cron: '30 3 * * 1-5'  # Mon–Fri 9:00 AM IST (3:30 AM UTC)
-  workflow_dispatch:        # 👈 Enables manual "Run workflow" button
+    - cron: '30 3 * * 1-5'  # 9:00 AM IST (UTC+5:30)
+  workflow_dispatch:
 
 jobs:
   send-signals:
