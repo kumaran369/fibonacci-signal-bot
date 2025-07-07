@@ -104,7 +104,7 @@ def main():
         symbol, entry, t1, t2, sl = sell_signals[0]
         body += f"{symbol}: Entry ₹{entry}, T1 ₹{t1}, T2 ₹{t2}, SL ₹{sl}\n"
 
-    subject = f"Fibonacci Signals – {datetime.now().strftime('%d %b %Y')}"
+    subject = f"Fibonacci Signals ONE – {datetime.now().strftime('%d %b %Y')}"
     send_email(subject, body)
 
 if __name__ == "__main__":
