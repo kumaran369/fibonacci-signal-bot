@@ -2,8 +2,8 @@ name: 📈 Daily Fibonacci Email Bot
 
 on:
   schedule:
-    - cron: '30 3 * * 1-5'  # Mon–Fri at 9:00 AM IST (3:30 UTC)
-  workflow_dispatch:       # Manual trigger option
+    - cron: '30 3 * * 1-5'  # Mon–Fri 9:00 AM IST (3:30 AM UTC)
+  workflow_dispatch:        # 👈 Enables manual "Run workflow" button
 
 jobs:
   send-signals:
@@ -23,6 +23,6 @@ jobs:
 
       - name: Run signal bot
         env:
-          EMAIL_USER: ${{ secrets.akumaran313@gmail.com }}
-          EMAIL_PASS: ${{ secrets.lbdk vebu jksi faub }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
         run: python fib_signal_bot.py
