@@ -1,0 +1,28 @@
+name: 📈 Daily Fibonacci Email Bot
+
+on:
+  schedule:
+    - cron: '30 3 * * 1-5'  # Mon–Fri at 9:00 AM IST (3:30 UTC)
+  workflow_dispatch:       # Manual trigger option
+
+jobs:
+  send-signals:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run signal bot
+        env:
+          EMAIL_USER: ${{ secrets.akumaran313@gmail.com }}
+          EMAIL_PASS: ${{ secrets.lbdk vebu jksi faub }}
+        run: python fib_signal_bot.py
